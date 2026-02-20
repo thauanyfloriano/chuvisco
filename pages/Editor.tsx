@@ -1,13 +1,147 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { supabase } from '../src/lib/supabaseClient';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { useToast } from "../hooks/use-toast";
+import {
+  ArrowLeft,
+  Save,
+  Image as ImageIcon,
+  Upload,
+  X,
+  Tag,
+  AlignLeft,
+  Trash2,
+  Clock,
+  Star,
+  Settings as SettingsIcon
+} from 'lucide-react';
 
 const Editor: React.FC = () => {
   const navigate = useNavigate();
-  const [title, setTitle] = useState('A Dança da Chuva');
+  const { id } = useParams<{ id: string }>();
+  const { toast } = useToast();
+
+  const [title, setTitle] = useState('');
   const [isToolbarVisible, setToolbarVisible] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+  const [saving, setSaving] = useState(false);
+  const [featured, setFeatured] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [showMeta, setShowMeta] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [authorId, setAuthorId] = useState<string | null>(null);
 
-  // Simulate showing formatting toolbar on selection
+  useEffect(() => {
+    if (id) {
+      fetchPoem(id);
+    }
+  }, [id]);
+
+  const fetchPoem = async (poemId: string) => {
+    const { data, error } = await supabase
+      .from('poems')
+      .select('*')
+      .eq('id', poemId)
+      .single();
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    if (data) {
+      setTitle(data.title);
+      setFeatured(data.featured || false);
+      setImageUrl(data.image_url || '');
+      setDescription(data.description || '');
+      setCategory(data.category || '');
+      setAuthorId(data.author_id);
+      if (editorRef.current) {
+        editorRef.current.innerHTML = data.content || '';
+      }
+    }
+  };
+
+  const handleSave = async (status: 'published' | 'draft') => {
+    if (!title) {
+      toast({
+        variant: "destructive",
+        title: "Título obrigatório",
+        description: "Dê um nome à sua obra antes de salvar.",
+      });
+      return;
+    }
+    setSaving(true);
+    const content = editorRef.current?.innerHTML || '';
+    const excerpt = editorRef.current?.innerText.substring(0, 150) + '...' || '';
+
+    try {
+      let finalAuthorId = authorId;
+
+      // Only force admin author if it's a new poem or no author exists
+      if (!finalAuthorId) {
+        const { data: profiles } = await supabase.from('profiles').select('id').eq('name', 'Naira Floriano').limit(1);
+        if (profiles && profiles.length > 0) {
+          finalAuthorId = profiles[0].id;
+        } else {
+          const { data: newProfile } = await supabase.from('profiles').insert([
+            { name: 'Naira Floriano', role: 'Administradora', avatar_url: '' }
+          ]).select().single();
+          if (newProfile) finalAuthorId = newProfile.id;
+        }
+      }
+
+      const poemData = {
+        title,
+        content,
+        excerpt,
+        description,
+        category,
+        status,
+        featured,
+        image_url: imageUrl,
+        author_id: finalAuthorId
+      };
+
+      if (id) {
+        const { error } = await supabase
+          .from('poems')
+          .update(poemData)
+          .eq('id', id);
+        if (error) throw error;
+        toast({
+          title: status === 'published' ? "Publicado!" : "Rascunho salvo",
+          description: "As alterações foram guardadas.",
+        });
+      } else {
+        const { error } = await supabase
+          .from('poems')
+          .insert([poemData]);
+        if (error) throw error;
+        toast({
+          title: "Novo poema!",
+          description: "Adicionado ao acervo.",
+        });
+        navigate('/admin');
+      }
+    } catch (error) {
+      console.error('Error saving poem:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: "Não foi possível guardar as alterações.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   useEffect(() => {
     const handleSelection = () => {
       const selection = window.getSelection();
@@ -22,108 +156,176 @@ const Editor: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-text-main font-display antialiased selection:bg-primary/30">
-      {/* Top Navigation / Toolbar */}
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-solid border-primary/20 bg-[#f9fcf8]/90 px-6 py-4 backdrop-blur-md transition-all sm:px-10">
-        <div className="flex items-center gap-4 flex-1">
-          <button 
-             onClick={() => navigate('/admin')}
-             className="group flex items-center gap-2 text-text-main text-sm font-medium font-ui leading-normal transition-colors hover:text-primary-dark"
-          >
-            <span className="material-symbols-outlined text-[20px] transition-transform group-hover:-translate-x-1">arrow_back</span>
-            <span>Cancelar</span>
-          </button>
-        </div>
-        
-        <div className="hidden md:flex flex-col items-center justify-center flex-1">
-          <div className="flex items-center gap-2 text-text-muted text-xs font-ui tracking-wide uppercase">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            Salvo às 14:00
+    <div className="flex h-screen overflow-hidden bg-white selection:bg-primary/20">
+      {/* Meta Sidebar (Collapsible) */}
+      <aside className={`fixed inset-y-0 right-0 w-80 bg-[#f9fcf8] border-l border-primary/10 transition-transform duration-500 ease-in-out z-50 shadow-2xl ${showMeta ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="h-full flex flex-col p-8 overflow-y-auto custom-scrollbar">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="font-ui text-sm font-bold uppercase tracking-[0.2em] text-primary">Detalhes da Obra</h3>
+            <Button variant="ghost" size="icon" onClick={() => setShowMeta(false)} className="rounded-full h-8 w-8 hover:bg-primary/10">
+              <X className="w-4 h-4 text-primary" />
+            </Button>
           </div>
-        </div>
-        
-        <div className="flex flex-1 justify-end gap-3">
-          <button className="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center rounded-xl bg-primary-light/20 px-4 py-2.5 text-text-main text-sm font-bold leading-normal tracking-[0.015em] font-ui transition-colors hover:bg-primary/20">
-            <span className="truncate">Salvar Rascunho</span>
-          </button>
-          <button className="flex min-w-[84px] cursor-pointer items-center justify-center rounded-xl bg-primary px-6 py-2.5 text-white text-sm font-bold leading-normal tracking-[0.015em] font-ui shadow-sm transition-all hover:bg-primary-dark hover:shadow-md active:scale-95">
-            <span className="truncate">Publicar</span>
-          </button>
-        </div>
-      </header>
 
-      {/* Main Content Area */}
-      <main className="flex-grow flex justify-center w-full px-4 py-8 sm:py-16">
-        <div className="w-full max-w-[720px] relative">
-            
-          {/* Simulated Floating Toolbar */}
-          <div 
-            className={`absolute top-[280px] left-1/2 -translate-x-1/2 -translate-y-16 z-40 transition-all duration-300 ${isToolbarVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
-          >
-            <div className="flex items-center gap-1 bg-text-main text-white rounded-lg p-1 shadow-float">
-              {['format_bold', 'format_italic', 'format_quote', 'format_clear'].map(icon => (
-                  <button key={icon} className="p-2 hover:bg-white/20 rounded transition-colors" title={icon}>
-                    <span className="material-symbols-outlined text-[20px]">{icon}</span>
-                  </button>
-              ))}
+          <div className="space-y-8">
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 font-ui text-[10px] font-bold uppercase tracking-widest text-muted">
+                <ImageIcon className="w-3 h-3" /> Capa
+              </label>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className={`relative group aspect-video rounded-2xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex flex-col items-center justify-center gap-2 ${imageUrl ? 'border-primary/20' : 'border-tertiary/20 hover:border-primary/40 bg-white'}`}
+              >
+                {uploading ? (
+                  <div className="w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                ) : imageUrl ? (
+                  <>
+                    <img src={imageUrl} alt="Capa" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Upload className="text-white w-6 h-6" />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5 text-primary/40 group-hover:text-primary/60" />
+                    <span className="text-[10px] font-bold text-muted/60 uppercase tracking-widest">Enviar</span>
+                  </>
+                )}
+              </div>
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  setUploading(true);
+                  const fileName = `poems/${Date.now()}-${file.name}`;
+                  const { error } = await supabase.storage.from('poems-images').upload(fileName, file);
+                  if (error) throw error;
+                  const { data: { publicUrl } } = supabase.storage.from('poems-images').getPublicUrl(fileName);
+                  setImageUrl(publicUrl);
+                  toast({ title: "Upload concluído", description: "Imagem salva no Supabase Storage." });
+                } catch (err) {
+                  console.error(err);
+                  toast({ variant: "destructive", title: "Erro no upload", description: "Tente novamente mais tarde." });
+                } finally { setUploading(false); }
+              }} />
             </div>
-            <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-text-main mx-auto"></div>
+
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 font-ui text-[10px] font-bold uppercase tracking-widest text-muted">
+                <AlignLeft className="w-3 h-3" /> Descrição
+              </label>
+              <Textarea
+                placeholder="Breve resumo..."
+                className="bg-white rounded-2xl border-tertiary/10 min-h-[100px] text-sm font-body resize-none focus:ring-primary/20"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 font-ui text-[10px] font-bold uppercase tracking-widest text-muted">
+                <Tag className="w-3 h-3" /> Categoria
+              </label>
+              <Input
+                placeholder="Ex: Amor..."
+                className="bg-white rounded-2xl border-tertiary/10 py-5 text-sm font-ui focus:ring-primary/20"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              />
+            </div>
+
+            <div
+              onClick={() => setFeatured(!featured)}
+              className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${featured ? 'bg-accent/10 border-accent/30 text-primary-dark' : 'bg-white border-tertiary/10 text-muted'}`}
+            >
+              <div className="flex items-center gap-3">
+                <Star className={`w-4 h-4 ${featured ? 'fill-accent text-accent' : ''}`} />
+                <span className="font-ui text-xs font-bold uppercase tracking-widest">Destaque</span>
+              </div>
+              <div className={`w-8 h-4 rounded-full relative transition-colors ${featured ? 'bg-accent' : 'bg-gray-200'}`}>
+                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${featured ? 'left-4.5' : 'left-0.5'}`}></div>
+              </div>
+            </div>
+
+            {id && (
+              <Button
+                variant="outline"
+                className="w-full rounded-2xl border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 font-ui text-[10px] font-bold uppercase tracking-widest"
+                onClick={async () => {
+                  if (confirm('Excluir permanentemente?')) {
+                    await supabase.from('poems').delete().eq('id', id);
+                    navigate('/admin');
+                  }
+                }}
+              >
+                <Trash2 className="w-3 h-3 mr-2" /> Excluir
+              </Button>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <header className="flex items-center justify-between bg-white/80 backdrop-blur-md px-10 py-6 border-b border-primary/5">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')} className="rounded-full hover:bg-primary/5">
+              <ArrowLeft className="w-5 h-5 text-primary" />
+            </Button>
+            <div className="h-6 w-px bg-primary/10"></div>
+            <p className="font-ui text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/60">
+              {saving ? 'Crescendo...' : id ? 'Refinando' : 'Novo Gotejo'}
+            </p>
           </div>
 
-          <div className="group mb-8">
-            <input 
-              className="w-full bg-transparent text-5xl sm:text-6xl font-bold text-text-main placeholder:text-gray-300 border-none outline-none focus:ring-0 p-0 leading-tight font-display tracking-tight" 
-              placeholder="O Título..." 
-              type="text" 
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => setShowMeta(true)}
+              className="rounded-2xl font-ui text-[10px] font-bold uppercase tracking-wider text-muted hover:text-primary"
+            >
+              <SettingsIcon className="w-4 h-4 mr-2" /> Detalhes
+            </Button>
+            <div className="h-6 w-px bg-primary/10 mx-1"></div>
+            <Button
+              variant="outline"
+              disabled={saving}
+              onClick={() => handleSave('draft')}
+              className="rounded-2xl font-ui text-[10px] font-bold uppercase tracking-widest border-primary/10 text-muted"
+            >
+              <Clock className="w-4 h-4 mr-2" /> Rascunho
+            </Button>
+            <Button
+              disabled={saving}
+              onClick={() => handleSave('published')}
+              className="rounded-2xl px-8 shadow-soft font-ui text-[10px] font-bold uppercase tracking-widest"
+            >
+              <Save className="w-4 h-4 mr-2" /> {id ? 'Salvar' : 'Publicar'}
+            </Button>
+          </div>
+        </header>
+
+        <main className="flex-grow overflow-y-auto px-10 py-16 custom-scrollbar">
+          <div className="max-w-[800px] mx-auto space-y-10">
+            <input
+              className="w-full bg-transparent text-6xl md:text-8xl font-display font-medium text-text-main placeholder:text-gray-100 border-none outline-none focus:ring-0 p-0 leading-tight italic"
+              placeholder="Título..."
+              type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
+            <div className="h-px w-20 bg-primary/20"></div>
+            <div
+              ref={editorRef}
+              className="editor-content w-full min-h-[60vh] text-2xl md:text-3xl leading-relaxed text-text-main/80 outline-none font-body prose prose-lg max-w-none empty:before:content-[attr(placeholder)] empty:before:text-gray-100"
+              contentEditable
+              suppressContentEditableWarning
+              placeholder="As palavras gotejam aqui..."
+            ></div>
           </div>
-
-          <div 
-            ref={editorRef}
-            className="editor-content w-full min-h-[60vh] text-xl sm:text-2xl leading-relaxed text-text-main/90 outline-none font-display resize-none group empty:before:content-[attr(placeholder)] empty:before:text-gray-400 empty:before:italic" 
-            contentEditable 
-            suppressContentEditableWarning
-          >
-            <p className="mb-6">
-                A chuva cai lá fora,<br/>
-                como um suspiro antigo da terra.<br/>
-                Eu observo através do vidro,<br/>
-                o mundo se dissolvendo em cinza e verde.
-            </p>
-            <p className="mb-6">
-                <span className="bg-primary/20 decoration-clone p-1 rounded">Cada gota é uma memória</span> que retorna,<br/>
-                lavando a poeira dos dias esquecidos.<br/>
-                O cheiro de terra molhada invade a sala,<br/>
-                e por um momento, o tempo para.
-            </p>
-            <p className="mb-6">
-                Não há pressa, não há ruído,<br/>
-                apenas o ritmo constante da água,<br/>
-                batendo suavemente,<br/>
-                como um coração que ainda pulsa.
-            </p>
-          </div>
-
-          <div className="mt-12 flex justify-between items-center border-t border-primary/20 pt-6 text-text-muted text-sm font-ui">
-            <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[16px]">text_fields</span>
-              105 palavras
-            </span>
-            <span className="flex items-center gap-1 opacity-70">Rascunho</span>
-          </div>
-        </div>
-      </main>
-
-      {/* Background Elements */}
-      <div className="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
-        <div className="absolute -top-[10%] -right-[5%] w-[40%] h-[40%] bg-gradient-to-br from-primary/5 to-transparent rounded-full blur-3xl opacity-60"></div>
-        <div className="absolute top-[40%] -left-[10%] w-[50%] h-[50%] bg-gradient-to-tr from-[#9bdd88]/10 to-transparent rounded-full blur-3xl opacity-40"></div>
+        </main>
       </div>
+
+      <div className={`fixed inset-0 bg-black/5 backdrop-blur-[2px] z-40 transition-opacity duration-500 ${showMeta ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setShowMeta(false)}></div>
     </div>
   );
 };
