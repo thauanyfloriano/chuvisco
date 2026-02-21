@@ -72,26 +72,14 @@ const About: React.FC = () => {
                             )}
                         </div>
 
-                        <div className="pt-8 border-t border-primary/10 flex flex-col gap-6">
-                            <p className="font-ui text-sm uppercase tracking-[0.2em] text-primary font-bold">Conecte-se comigo</p>
-                            <div className="flex gap-6">
-                                <a href="#" className="flex items-center gap-2 text-text-main/60 hover:text-primary transition-colors">
-                                    <span className="material-symbols-outlined">alternate_email</span>
-                                    <span className="font-ui text-sm font-medium">Instagram</span>
-                                </a>
-                                <a href="#" className="flex items-center gap-2 text-text-main/60 hover:text-primary transition-colors">
-                                    <span className="material-symbols-outlined">textsms</span>
-                                    <span className="font-ui text-sm font-medium">Newsletter</span>
-                                </a>
-                            </div>
-                        </div>
+                    
                     </div>
                 </div>
             </main>
 
             <footer className="bg-white/50 py-12 border-t border-primary/10">
                 <div className="max-w-7xl mx-auto px-6 text-center">
-                    <p className="font-ui text-xs text-text-main/40 uppercase tracking-[0.3em]">Chuvisco Sereno © 2023</p>
+                    <p className="font-ui text-xs text-text-main/40 uppercase tracking-[0.3em]">Chuvisco Sereno © {new Date().getFullYear()}</p>
                 </div>
             </footer>
         </div>

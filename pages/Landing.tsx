@@ -269,7 +269,7 @@ const Landing: React.FC = () => {
             <a className="hover:text-primary transition-colors" href="#">Contato</a>
           </div>
           <p className="font-ui text-xs text-text-main/40 uppercase tracking-widest">
-            © 2023 Chuvisco Sereno.
+            © {new Date().getFullYear()} Chuvisco Sereno.
           </p>
         </div>
       </footer>
