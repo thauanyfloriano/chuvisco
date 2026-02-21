@@ -114,7 +114,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex overflow-hidden bg-[#f8faf7] font-body text-text-main">
+    <div className="flex lg:h-screen overflow-hidden bg-[#f8faf7] font-body text-text-main">
       <Sidebar />
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
@@ -195,12 +195,12 @@ const AdminDashboard: React.FC = () => {
 
                     <h3
                       onClick={() => navigate(`/editor/${poem.id}`)}
-                      className="font-display text-xl lg:text-2xl font-bold text-primary group-hover:text-primary-dark cursor-pointer transition-colors leading-tight italic line-clamp-2"
+                      className="font-display text-xl lg:text-2xl font-bold text-primary group-hover:text-primary-dark cursor-pointer transition-colors leading-tight italic line-clamp-2 break-all"
                     >
                       {poem.title}
                     </h3>
 
-                    <p className="text-muted font-body text-xs lg:text-sm line-clamp-2 leading-relaxed opacity-70">
+                    <p className="text-muted font-body text-xs lg:text-sm line-clamp-2 leading-relaxed opacity-70 break-all">
                       {poem.excerpt || "Sem resumo disponível..."}
                     </p>
 
