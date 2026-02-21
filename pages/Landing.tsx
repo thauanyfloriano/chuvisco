@@ -117,7 +117,7 @@ const Landing: React.FC = () => {
                 <div className="flex items-center gap-3 mb-10 p-4 bg-primary-pale/20 rounded-2xl w-fit border border-primary/5">
                   <div className="w-10 h-10 rounded-full overflow-hidden border border-primary/20 shadow-sm flex items-center justify-center bg-white">
                     {featuredPoem.author.avatar_url || featuredPoem.author.role === 'Administradora' ? (
-                      <img src={featuredPoem.author.avatar_url || "/src/assets/nai.jpg"} alt={featuredPoem.author.name} className="w-full h-full object-cover" />
+                      <img src={featuredPoem.author.avatar_url || "/nai.jpg"} alt={featuredPoem.author.name} className="w-full h-full object-cover" />
                     ) : (
                       <span className="material-symbols-outlined text-primary text-2xl">water_drop</span>
                     )}
@@ -130,13 +130,15 @@ const Landing: React.FC = () => {
               )}
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={() => featuredPoem && navigate(`/read/${featuredPoem.id}`)}
-                  className="bg-primary text-white px-10 py-5 rounded-xl font-ui font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-hover hover:-translate-y-1 transition-all group"
-                >
-                  <span>Ler Agora</span>
-                  <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                </button>
+                {featuredPoem && (
+                  <button
+                    onClick={() => navigate(`/read/${featuredPoem.id}`)}
+                    className="bg-primary text-white px-10 py-5 rounded-xl font-ui font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-hover hover:-translate-y-1 transition-all group"
+                  >
+                    <span>Ler Agora</span>
+                    <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  </button>
+                )}
                 <button
                   onClick={() => document.getElementById('acervo')?.scrollIntoView({ behavior: 'smooth' })}
                   className="border border-primary/20 text-primary px-10 py-5 rounded-xl font-ui font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-primary/5 transition-colors"
@@ -197,35 +199,44 @@ const Landing: React.FC = () => {
             <div className="columns-1 md:columns-2 lg:columns-3 gap-8 pb-20 space-y-8">
               {loading ? (
                 <div className="text-center w-full col-span-full py-10 text-muted">Carregando poemas...</div>
-              ) : poems.map(poem => (
-                <article key={poem.id} className="break-inside-avoid group cursor-pointer" onClick={() => navigate(`/read/${poem.id}`)}>
-                  <div className="relative h-[420px] rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-soft hover:-translate-y-1 transition-all duration-300 group-hover:shadow-lg">
-                    <img src={poem.imageUrl || MOCK_CARD_IMAGES[poems.indexOf(poem) % MOCK_CARD_IMAGES.length]} alt={poem.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#101b0d] via-[#101b0d]/40 to-transparent"></div>
-                    <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10 text-white">
-                      <div className="flex justify-between items-start mb-4">
-                        <span className="font-ui text-xs font-semibold text-white/90 uppercase tracking-wider bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">{poem.category}</span>
-                        <span className="font-ui text-xs font-medium text-white/60">{poem.date}</span>
-                      </div>
-                      <h3 className="text-3xl font-bold mb-3 leading-tight font-display break-all line-clamp-2">{poem.title}</h3>
-                      <p className="text-white/80 line-clamp-2 font-light font-body mb-6 break-all">{poem.excerpt}</p>
+              ) : poems.map((poem, idx) => {
+                // Definir proporções variadas para o efeito Pinterest
+                const aspects = ['aspect-[4/5]', 'aspect-[3/4]', 'aspect-square', 'aspect-[2/3]'];
+                const aspectClass = aspects[idx % aspects.length];
 
-                      {poem.author && (
-                        <div className="flex items-center gap-3 pt-4 border-t border-white/10">
-                          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border border-white/30 backdrop-blur-sm">
-                            {poem.author.avatarUrl || poem.author.role === 'Administradora' ? (
-                              <img src={poem.author.avatarUrl || "/src/assets/nai.jpg"} alt={poem.author.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="material-symbols-outlined text-white text-lg">water_drop</span>
-                            )}
-                          </div>
-                          <span className="font-ui text-sm font-medium text-white/80">{poem.author.name}</span>
+                return (
+                  <article key={poem.id} className="break-inside-avoid group cursor-pointer mb-8" onClick={() => navigate(`/read/${poem.id}`)}>
+                    <div className={`relative ${aspectClass} rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-soft hover:-translate-y-1 transition-all duration-500 group-hover:shadow-lg`}>
+                      <img
+                        src={poem.imageUrl || MOCK_CARD_IMAGES[idx % MOCK_CARD_IMAGES.length]}
+                        alt={poem.title}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#101b0d] via-[#101b0d]/20 to-transparent"></div>
+                      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white">
+                        <div className="flex justify-between items-start mb-3">
+                          <span className="font-ui text-[10px] font-semibold text-white/90 uppercase tracking-wider bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">{poem.category}</span>
                         </div>
-                      )}
+                        <h3 className="text-2xl font-bold mb-2 leading-tight font-display break-all line-clamp-2 italic">{poem.title}</h3>
+                        <p className="text-white/80 text-sm line-clamp-2 font-light font-body mb-4 break-all">{poem.excerpt}</p>
+
+                        {poem.author && (
+                          <div className="flex items-center gap-3 pt-3 border-t border-white/10">
+                            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border border-white/30 backdrop-blur-sm">
+                              {poem.author.avatarUrl || poem.author.role === 'Administradora' ? (
+                                <img src={poem.author.avatarUrl || "/nai.jpg"} alt={poem.author.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="material-symbols-outlined text-white text-base">water_drop</span>
+                              )}
+                            </div>
+                            <span className="font-ui text-xs font-medium text-white/80">{poem.author.name}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
 
               <article className="break-inside-avoid mb-8 group cursor-pointer" onClick={() => navigate('/submit')}>
                 <div className="relative bg-[#3b7c2e] p-8 md:p-10 rounded-[1.5rem] shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-white flex flex-col items-center justify-center text-center min-h-[300px]">
@@ -239,13 +250,6 @@ const Landing: React.FC = () => {
                   </button>
                 </div>
               </article>
-            </div>
-
-            <div className="flex justify-center pb-20">
-              <button className="flex items-center gap-2 text-primary font-ui font-medium hover:text-primary-light transition-colors border-b border-primary/20 pb-1 hover:border-primary">
-                Ver todos os poemas
-                <span className="material-symbols-outlined text-sm">arrow_downward</span>
-              </button>
             </div>
           </div>
         </div>

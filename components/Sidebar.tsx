@@ -93,7 +93,7 @@ const Sidebar: React.FC = () => {
               className="h-10 w-10 rounded-full bg-accent/20 flex items-center justify-center border border-accent/30 overflow-hidden group cursor-pointer hover:bg-accent/30 transition-colors"
             >
               <img
-                src="/src/assets/nai.jpg"
+                src="/nai.jpg"
                 alt="Naira Floriano"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 onError={(e) => {

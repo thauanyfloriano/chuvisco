@@ -203,7 +203,7 @@ const AdminDashboard: React.FC = () => {
                         <div className="w-6 h-6 rounded-full bg-primary/10 flex-shrink-0 overflow-hidden flex items-center justify-center border border-primary/20">
                           {poem.author?.avatar_url || poem.author?.role === 'Administradora' ? (
                             <img
-                              src={poem.author?.avatar_url || "/src/assets/nai.jpg"}
+                              src={poem.author?.avatar_url || "/nai.jpg"}
                               alt={poem.author?.name}
                               className="w-full h-full object-cover"
                             />

@@ -77,7 +77,7 @@ const ReadingView: React.FC = () => {
             <>
               <div className="w-16 h-16 rounded-full overflow-hidden mb-4 border border-[#7bbc6a] shadow-sm flex items-center justify-center bg-primary/5">
                 {poem.author.avatar_url || poem.author.role === 'Administradora' ? (
-                  <img src={poem.author.avatar_url || "/src/assets/nai.jpg"} alt={poem.author.name} className="w-full h-full object-cover" />
+                  <img src={poem.author.avatar_url || "/nai.jpg"} alt={poem.author.name} className="w-full h-full object-cover" />
                 ) : (
                   <span className="material-symbols-outlined text-primary text-4xl">water_drop</span>
                 )}

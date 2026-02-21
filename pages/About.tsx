@@ -42,7 +42,7 @@ const About: React.FC = () => {
                     <div className="lg:col-span-5 relative">
                         <div className="aspect-square rounded-[3rem] overflow-hidden shadow-2xl rotate-3">
                             <img
-                                src={profile?.avatar_url || "/src/assets/nai.jpg"}
+                                src={profile?.avatar_url || "/nai.jpg"}
                                 alt="Naira Floriano"
                                 className="w-full h-full object-cover"
                             />
