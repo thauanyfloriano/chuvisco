@@ -23,12 +23,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '../components/ui/dropdown-menu';
-import { useToast } from '../hooks/use-toast';
+
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
 
@@ -60,10 +60,7 @@ const AdminDashboard: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['poems'] });
-      toast({
-        title: "Poema excluído",
-        description: "A obra foi removida permanentemente.",
-      });
+
     },
   });
 
@@ -88,10 +85,7 @@ const AdminDashboard: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['poems'] });
-      toast({
-        title: "Destaque atualizado",
-        description: "O jardim agora tem um novo centro das atenções.",
-      });
+
     },
   });
 
@@ -147,7 +141,7 @@ const AdminDashboard: React.FC = () => {
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-4 lg:px-6 py-2.5 rounded-xl text-[9px] lg:text-xs font-bold uppercase tracking-widest transition-all ${statusFilter === status
+                className={`px-4 lg:px-6 py-2.5 rounded-xl text-[9px] lg:text-xs font-bold uppercase tracking-widest transition-all flex-1 ${statusFilter === status
                   ? 'bg-primary text-white shadow-md'
                   : 'text-muted hover:text-primary hover:bg-primary/5'
                   }`}
