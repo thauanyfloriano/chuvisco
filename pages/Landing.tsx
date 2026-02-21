@@ -263,11 +263,7 @@ const Landing: React.FC = () => {
             <span className="material-symbols-outlined text-primary/60">water_drop</span>
             <span className="text-xl font-bold italic text-text-main/80 font-display">Chuvisco</span>
           </div>
-          <div className="flex gap-8 font-ui text-sm text-text-main/60">
-            <a className="hover:text-primary transition-colors" href="#">Termos</a>
-            <a className="hover:text-primary transition-colors" href="#">Privacidade</a>
-            <a className="hover:text-primary transition-colors" href="#">Contato</a>
-          </div>
+
           <p className="font-ui text-xs text-text-main/40 uppercase tracking-widest">
             © {new Date().getFullYear()} Chuvisco Sereno.
           </p>
