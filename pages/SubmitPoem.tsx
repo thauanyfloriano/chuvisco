@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import Navbar from '../components/Navbar';
 import { supabase } from '../src/lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
@@ -147,13 +147,13 @@ const SubmitPoem: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <label className="flex items-center gap-2 font-ui text-[10px] font-bold uppercase tracking-widest text-muted">
                                 <Send className="w-3 h-3" /> Seus Versos
                             </label>
                             <div
                                 ref={editorRef}
-                                className="w-full min-h-[300px] text-2xl leading-relaxed text-text-main/80 outline-none font-body prose prose-lg max-w-none empty:before:content-[attr(placeholder)] empty:before:text-gray-200"
+                                className="w-full min-h-[300px] text-2xl leading-relaxed text-text-main/80 outline-none font-body prose prose-lg max-w-none empty:before:content-[attr(placeholder)] empty:before:text-gray-200 transition-all whitespace-pre-wrap italic"
                                 contentEditable
                                 suppressContentEditableWarning
                                 placeholder="Deixe as palavras fluírem..."

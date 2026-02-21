@@ -1,12 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../src/lib/supabaseClient';
+import { useCreateBlockNote } from "@blocknote/react";
+import { BlockNoteView } from "@blocknote/mantine";
+import { pt } from "@blocknote/core/locales";
+import "@blocknote/mantine/style.css";
+import "@blocknote/core/fonts/inter.css";
 
 const ReadingView: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [poem, setPoem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Editor em modo leitura para renderizar o conteúdo fielmente
+  const editor = useCreateBlockNote({ dictionary: pt });
 
   useEffect(() => {
     if (id) fetchPoem(id);
@@ -26,16 +34,33 @@ const ReadingView: React.FC = () => {
 
       if (error) throw error;
       setPoem(data);
+
+      // Carregar conteúdo no editor assim que tiver os dados
+      if (data?.content) {
+        try {
+          // Conteúdo novo: JSON com blocos BlockNote (preserva linhas em branco)
+          const blocks = JSON.parse(data.content);
+          editor.replaceBlocks(editor.topLevelBlocks, blocks);
+        } catch {
+          // Fallback: conteúdo antigo em Markdown
+          const blocks = await editor.tryParseMarkdownToBlocks(data.content);
+          editor.replaceBlocks(editor.topLevelBlocks, blocks);
+        }
+      }
     } catch (error) {
       console.error('Error fetching poem:', error);
-      navigate('/'); // Redirect to home on error
+      navigate('/');
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-text-muted">Carregando...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   if (!poem) return null;
@@ -60,7 +85,7 @@ const ReadingView: React.FC = () => {
               {new Date(poem.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
             </span>
           </div>
-          <h1 className="font-display text-primary text-5xl md:text-[56px] font-bold leading-tight mb-8 break-all">
+          <h1 className="font-display text-primary text-5xl md:text-[56px] font-bold leading-tight mb-8 break-words">
             {poem.title}
           </h1>
           <div className="text-[#7bbc6a] opacity-80">
@@ -68,8 +93,13 @@ const ReadingView: React.FC = () => {
           </div>
         </header>
 
-        <article className="w-full font-body text-text-main text-[21px] leading-[1.8] tracking-wide break-all">
-          <div dangerouslySetInnerHTML={{ __html: poem.content }} />
+        {/* Conteúdo renderizado pelo BlockNote em modo somente-leitura */}
+        <article className="w-full reading-view-content">
+          <BlockNoteView
+            editor={editor}
+            editable={false}
+            theme="light"
+          />
         </article>
 
         <footer className="mt-24 w-full flex flex-col items-center border-t border-[#7bbc6a]/30 pt-12">

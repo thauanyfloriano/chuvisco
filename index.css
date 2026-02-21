@@ -97,6 +97,35 @@
   color: #2a4023;
 }
 
+/* Estilos para destaques Markdown (==texto==) */
+mark {
+  background-color: #bbfda6;
+  color: #2a4023;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Ajustes finos para o BlockNote */
+.bn-container {
+  padding: 0 !important;
+}
+
+.bn-editor {
+  padding-inline: 0 !important;
+  background: transparent !important;
+}
+
+.bn-main-content {
+  color: inherit !important;
+}
+
+/* Garantir que o prose não quebre o layout do BlockNote */
+.prose-primary mark {
+  background-color: #bbfda6;
+  color: #2a4023;
+}
+
 .drop-cap::first-letter {
   float: left;
   font-family: 'Playfair Display', serif;
@@ -129,4 +158,86 @@
   .vertical-text {
     writing-mode: vertical-rl;
   }
+}
+
+/* ====== BlockNote: ReadingView (modo leitura) ====== */
+
+/* Remover toolbar e handles no modo somente-leitura */
+.reading-view-content .bn-editor [data-node-type="blockGroup"] {
+  padding: 0;
+}
+
+/* Ocultar menu lateral (drag handles) no modo leitura */
+.reading-view-content .bn-side-menu,
+.reading-view-content [data-side-menu],
+.reading-view-content .bn-block-outer:hover::before {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Tipografia elegante no modo leitura */
+.reading-view-content .bn-editor {
+  background: transparent !important;
+  padding: 0 !important;
+  font-family: 'Lora', serif;
+  font-size: 21px;
+  line-height: 1.9;
+  color: #2a4023;
+}
+
+.reading-view-content .bn-editor p {
+  font-size: 21px;
+  line-height: 1.9;
+  color: rgba(42, 64, 35, 0.85);
+  margin: 0;
+  min-height: 1.9em;
+  /* preservar linhas em branco */
+}
+
+/* Linha em branco visível */
+.reading-view-content .bn-editor .bn-block:empty p,
+.reading-view-content .bn-editor p:empty {
+  min-height: 1.6em;
+  display: block;
+}
+
+/* Remover borda de foco e seleção azul */
+.reading-view-content .bn-editor *:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Cabeçalhos no modo leitura */
+.reading-view-content .bn-editor h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  color: #3b7c2e;
+  font-style: italic;
+}
+
+.reading-view-content .bn-editor h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem;
+  color: #3b7c2e;
+  font-style: italic;
+}
+
+/* Citações */
+.reading-view-content .bn-editor blockquote {
+  border-left: 3px solid #bbfda6;
+  padding-left: 1rem;
+  color: rgba(42, 64, 35, 0.7);
+  font-style: italic;
+}
+
+/* ====== BlockNote: Editor (modo edição) ====== */
+
+/* Remover fundo branco do container do editor */
+.bn-container {
+  background: transparent !important;
+}
+
+.bn-editor {
+  background: transparent !important;
 }

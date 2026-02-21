@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import { supabase } from '../src/lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
@@ -189,7 +189,7 @@ const AdminDashboard: React.FC = () => {
 
                     <h3
                       onClick={() => navigate(`/editor/${poem.id}`)}
-                      className="font-display text-xl lg:text-2xl font-bold text-primary group-hover:text-primary-dark cursor-pointer transition-colors leading-tight italic line-clamp-2 break-all"
+                      className="font-display text-xl lg:text-2xl font-bold text-primary group-hover:text-primary-dark cursor-pointer transition-colors leading-tight italic line-clamp-2 break-words"
                     >
                       {poem.title}
                     </h3>

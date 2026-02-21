@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../src/lib/supabaseClient';
@@ -8,6 +8,10 @@ const Landing: React.FC = () => {
   const [poems, setPoems] = useState<any[]>([]);
   const [featuredPoem, setFeaturedPoem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Tudo');
+  const [showSearch, setShowSearch] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const MOCK_HERO_IMAGE = "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=2670";
   const MOCK_CARD_IMAGES = [
@@ -72,6 +76,15 @@ const Landing: React.FC = () => {
     }
   };
 
+  const categories = ['Tudo', ...Array.from(new Set(poems.map(p => p.category)))];
+
+  const filteredPoems = poems.filter(poem => {
+    const matchesSearch = poem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      poem.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'Tudo' || poem.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
   return (
     <div className="bg-[#f2fcf0] dark:bg-[#132210] font-display min-h-screen">
       <Navbar />
@@ -106,10 +119,10 @@ const Landing: React.FC = () => {
               <span className="text-primary font-bold tracking-widest uppercase text-xs mb-6 block">
                 {loading ? 'Buscando...' : featuredPoem ? 'Poesia em Destaque' : 'Chuvisco Sereno'}
               </span>
-              <h2 className="text-5xl lg:text-6xl font-display font-bold leading-tight mb-8 text-primary italic break-all">
+              <h2 className="text-5xl lg:text-6xl font-display font-bold leading-tight mb-8 text-primary italic break-words">
                 {loading ? '...' : featuredPoem?.title || 'Cative sua alma com versos'}
               </h2>
-              <div className="drop-cap text-lg lg:text-xl leading-relaxed italic text-text-main/70 dark:text-primary-pale/70 mb-12 font-body break-all">
+              <div className="drop-cap text-lg lg:text-xl leading-relaxed italic text-text-main/70 dark:text-primary-pale/70 mb-12 font-body break-words whitespace-pre-wrap">
                 {loading ? '...' : featuredPoem?.excerpt || 'Pequenos gotejos de sentimentos transformados em palavras. Explore um jardim onde cada verso é uma semente e cada estrofe um florescer.'}
               </div>
 
@@ -186,50 +199,107 @@ const Landing: React.FC = () => {
                 <span className="font-ui text-primary font-medium tracking-wider uppercase text-sm mb-2 block">Acervo</span>
                 <h2 className="text-4xl md:text-5xl font-bold text-text-main">Poemas Recentes</h2>
               </div>
-              <div className="flex gap-2">
-                <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:border-primary hover:text-primary transition-colors">
+              <div className="flex gap-2 relative">
+                <button
+                  onClick={() => { setShowFilters(!showFilters); setShowSearch(false); }}
+                  className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${showFilters ? 'bg-primary text-white border-primary' : 'border-gray-200 hover:border-primary hover:text-primary'}`}
+                >
                   <span className="material-symbols-outlined text-[20px]">filter_list</span>
                 </button>
-                <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:border-primary hover:text-primary transition-colors">
+                <button
+                  onClick={() => { setShowSearch(!showSearch); setShowFilters(false); }}
+                  className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${showSearch ? 'bg-primary text-white border-primary' : 'border-gray-200 hover:border-primary hover:text-primary'}`}
+                >
                   <span className="material-symbols-outlined text-[20px]">search</span>
                 </button>
               </div>
             </div>
 
-            <div className="columns-1 md:columns-2 lg:columns-3 gap-8 pb-20 space-y-8">
+            {/* Search Bar - Expandable */}
+            <div className={`overflow-hidden transition-all duration-300 ${showSearch ? 'max-h-20 mb-8 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+              <div className="relative group max-w-2xl mx-auto">
+                <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-primary/40 group-focus-within:text-primary transition-colors">search</span>
+                <input
+                  type="text"
+                  placeholder="Pesquisar por título ou trecho..."
+                  className="w-full bg-primary/5 border border-primary/10 rounded-2xl py-5 pl-14 pr-6 font-body text-lg focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm('')} className="absolute right-5 top-1/2 -translate-y-1/2 text-muted hover:text-primary">
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Filters - Expandable */}
+            <div className={`overflow-hidden transition-all duration-300 ${showFilters ? 'max-h-20 mb-12 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+              <div className="flex flex-wrap justify-center gap-3">
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-6 py-2.5 rounded-full font-ui text-xs font-bold uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-primary text-white shadow-md scale-105' : 'bg-primary/5 text-primary hover:bg-primary/10'}`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 pb-20">
               {loading ? (
-                <div className="text-center w-full col-span-full py-10 text-muted">Carregando poemas...</div>
-              ) : poems.map((poem, idx) => {
-                // Definir proporções variadas para o efeito Pinterest
-                const aspects = ['aspect-[4/5]', 'aspect-[3/4]', 'aspect-square', 'aspect-[2/3]'];
+                <div className="text-center w-full py-20 column-span-all">
+                  <div className="w-10 h-10 border-2 border-primary/10 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-muted font-ui text-xs uppercase tracking-widest">Buscando versos...</p>
+                </div>
+              ) : filteredPoems.length === 0 ? (
+                <div className="text-center w-full py-20 bg-primary/5 rounded-[3rem] border border-dashed border-primary/20 column-span-all">
+                  <span className="material-symbols-outlined text-5xl text-primary/20 mb-4">water_drop</span>
+                  <h3 className="text-2xl font-display font-bold text-primary italic mb-2">Nenhum gotejo encontrado</h3>
+                  <p className="text-muted font-body">Tente termos diferentes ou outros filtros.</p>
+                  <button onClick={() => { setSearchTerm(''); setSelectedCategory('Tudo'); }} className="mt-6 text-primary font-ui font-bold uppercase tracking-widest text-xs hover:underline">Limpar busca</button>
+                </div>
+              ) : filteredPoems.map((poem, idx) => {
+                // Pinterest Style: Variação maior de proporções
+                const aspects = [
+                  'aspect-[3/4]',
+                  'aspect-[4/5]',
+                  'aspect-[2/3]',
+                  'aspect-[3/5]',
+                  'aspect-square'
+                ];
                 const aspectClass = aspects[idx % aspects.length];
 
                 return (
-                  <article key={poem.id} className="break-inside-avoid group cursor-pointer mb-8" onClick={() => navigate(`/read/${poem.id}`)}>
-                    <div className={`relative ${aspectClass} rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-soft hover:-translate-y-1 transition-all duration-500 group-hover:shadow-lg`}>
+                  <article key={poem.id} className="break-inside-avoid group cursor-pointer mb-6" onClick={() => navigate(`/read/${poem.id}`)}>
+                    <div className={`relative ${aspectClass} rounded-[2rem] overflow-hidden shadow-sm hover:shadow-hover hover:-translate-y-2 transition-all duration-700 group-hover:z-10`}>
                       <img
                         src={poem.imageUrl || MOCK_CARD_IMAGES[idx % MOCK_CARD_IMAGES.length]}
                         alt={poem.title}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#101b0d] via-[#101b0d]/20 to-transparent"></div>
-                      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white">
-                        <div className="flex justify-between items-start mb-3">
-                          <span className="font-ui text-[10px] font-semibold text-white/90 uppercase tracking-wider bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">{poem.category}</span>
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#101b0d] via-[#101b0d]/10 to-transparent opacity-80 group-hover:opacity-100 transition-opacity"></div>
+
+                      <div className="absolute inset-0 p-6 flex flex-col justify-end transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                        <div className="mb-3">
+                          <span className="font-ui text-[9px] font-bold text-white uppercase tracking-widest bg-primary/60 backdrop-blur-md px-3 py-1 rounded-full">{poem.category}</span>
                         </div>
-                        <h3 className="text-2xl font-bold mb-2 leading-tight font-display break-all line-clamp-2 italic">{poem.title}</h3>
-                        <p className="text-white/80 text-sm line-clamp-2 font-light font-body mb-4 break-all">{poem.excerpt}</p>
+                        <h3 className="text-xl lg:text-2xl font-bold mb-2 leading-tight font-display break-words italic text-white">{poem.title}</h3>
+                        <p className="text-white/70 text-xs line-clamp-3 font-light font-body mb-4 break-words group-hover:text-white/90 transition-colors whitespace-pre-wrap">{poem.excerpt}</p>
 
                         {poem.author && (
-                          <div className="flex items-center gap-3 pt-3 border-t border-white/10">
-                            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border border-white/30 backdrop-blur-sm">
+                          <div className="flex items-center gap-3 pt-3 border-t border-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border border-white/30">
                               {poem.author.avatarUrl || poem.author.role === 'Administradora' ? (
                                 <img src={poem.author.avatarUrl || "/nai.jpg"} alt={poem.author.name} className="w-full h-full object-cover" />
                               ) : (
-                                <span className="material-symbols-outlined text-white text-base">water_drop</span>
+                                <span className="material-symbols-outlined text-white text-[12px]">water_drop</span>
                               )}
                             </div>
-                            <span className="font-ui text-xs font-medium text-white/80">{poem.author.name}</span>
+                            <span className="font-ui text-[10px] font-bold uppercase tracking-widest text-white/80">{poem.author.name}</span>
                           </div>
                         )}
                       </div>
@@ -238,15 +308,18 @@ const Landing: React.FC = () => {
                 );
               })}
 
-              <article className="break-inside-avoid mb-8 group cursor-pointer" onClick={() => navigate('/submit')}>
-                <div className="relative bg-[#3b7c2e] p-8 md:p-10 rounded-[1.5rem] shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-white flex flex-col items-center justify-center text-center min-h-[300px]">
-                  <span className="material-symbols-outlined text-5xl mb-4 text-accent/80">edit_note</span>
-                  <h3 className="text-2xl font-bold mb-3 font-display">Envie sua Poesia</h3>
-                  <p className="text-white/80 mb-6 font-light font-body">
-                    O jardim está sempre aberto a novas sementes. Compartilhe seus versos conosco.
+              <article className="break-inside-avoid mb-6 group cursor-pointer" onClick={() => navigate('/submit')}>
+                <div className="relative bg-primary min-h-[320px] p-10 rounded-[2rem] shadow-lg hover:shadow-hover hover:-translate-y-2 transition-all duration-500 text-white flex flex-col items-center justify-center text-center overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-10 transform scale-150 rotate-12">
+                    <span className="material-symbols-outlined text-9xl">edit_note</span>
+                  </div>
+                  <span className="material-symbols-outlined text-5xl mb-6 text-accent animate-bounce">edit_note</span>
+                  <h3 className="text-2xl font-bold mb-4 font-display italic">Semeie seus Versos</h3>
+                  <p className="text-white/70 mb-8 font-light font-body text-sm leading-relaxed">
+                    O acervo floresce com a sua participação. Compartilhe sua alma conosco.
                   </p>
-                  <button className="bg-white text-primary px-6 py-2 rounded-full font-ui font-medium text-sm hover:bg-accent transition-colors">
-                    Enviar Poesia
+                  <button className="bg-white text-primary px-8 py-3 rounded-full font-ui font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-accent transition-all hover:scale-105 active:scale-95 shadow-md">
+                    Cultivar Agora
                   </button>
                 </div>
               </article>

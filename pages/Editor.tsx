@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../src/lib/supabaseClient';
 import { Button } from '../components/ui/button';
@@ -16,8 +16,15 @@ import {
   Trash2,
   Clock,
   Star,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
 } from 'lucide-react';
+
+// BlockNote — imports exatamente como a documentação recomenda
+import { useCreateBlockNote, SuggestionMenuController, getDefaultReactSlashMenuItems } from "@blocknote/react";
+import { BlockNoteView } from "@blocknote/mantine";
+import { pt } from "@blocknote/core/locales";
+import "@blocknote/mantine/style.css";
+import "@blocknote/core/fonts/inter.css";
 
 const Editor: React.FC = () => {
   const navigate = useNavigate();
@@ -25,8 +32,6 @@ const Editor: React.FC = () => {
   const { toast } = useToast();
 
   const [title, setTitle] = useState('');
-  const [isToolbarVisible, setToolbarVisible] = useState(false);
-  const editorRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
   const [featured, setFeatured] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
@@ -36,6 +41,11 @@ const Editor: React.FC = () => {
   const [showMeta, setShowMeta] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [authorId, setAuthorId] = useState<string | null>(null);
+
+  // Criar editor com locale Português
+  const editor = useCreateBlockNote({
+    dictionary: pt,
+  });
 
   useEffect(() => {
     if (id) {
@@ -62,8 +72,17 @@ const Editor: React.FC = () => {
       setDescription(data.description || '');
       setCategory(data.category || '');
       setAuthorId(data.author_id);
-      if (editorRef.current) {
-        editorRef.current.innerHTML = data.content || '';
+
+      if (data.content) {
+        try {
+          // Tentar carregar como JSON (formato nativo BlockNote — preserva linhas em branco)
+          const blocks = JSON.parse(data.content);
+          editor.replaceBlocks(editor.topLevelBlocks, blocks);
+        } catch {
+          // Fallback: conteúdo antigo em Markdown
+          const blocks = await editor.tryParseMarkdownToBlocks(data.content);
+          editor.replaceBlocks(editor.topLevelBlocks, blocks);
+        }
       }
     }
   };
@@ -78,56 +97,59 @@ const Editor: React.FC = () => {
       return;
     }
     setSaving(true);
-    const content = editorRef.current?.innerHTML || '';
-    const excerpt = editorRef.current?.innerText.substring(0, 150) + '...' || '';
 
     try {
-      let finalAuthorId = authorId;
+      // Salvar blocos como JSON — preserva TUDO, incluindo linhas em branco
+      const blocks = editor.topLevelBlocks;
+      const contentJson = JSON.stringify(blocks);
 
-      // Only force admin author if it's a new poem or no author exists
+      // Gerar excerpt em texto limpo para listagens
+      const markdown = await editor.blocksToMarkdownLossy(blocks);
+      const excerpt = markdown.replace(/[#*`_>\[\]]/g, '').trim().substring(0, 150) + '...';
+
+      let finalAuthorId = authorId;
       if (!finalAuthorId) {
-        const { data: profiles } = await supabase.from('profiles').select('id').eq('name', 'Naira Floriano').limit(1);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('name', 'Naira Floriano')
+          .limit(1);
+
         if (profiles && profiles.length > 0) {
           finalAuthorId = profiles[0].id;
         } else {
-          const { data: newProfile } = await supabase.from('profiles').insert([
-            { name: 'Naira Floriano', role: 'Administradora', avatar_url: '' }
-          ]).select().single();
+          const { data: newProfile } = await supabase
+            .from('profiles')
+            .insert([{ name: 'Naira Floriano', role: 'Administradora', avatar_url: '' }])
+            .select()
+            .single();
           if (newProfile) finalAuthorId = newProfile.id;
         }
       }
 
       const poemData = {
         title,
-        content,
+        content: contentJson,   // Blocos JSON nativos do BlockNote
         excerpt,
         description,
         category,
         status,
         featured,
         image_url: imageUrl,
-        author_id: finalAuthorId
+        author_id: finalAuthorId,
       };
 
       if (id) {
-        const { error } = await supabase
-          .from('poems')
-          .update(poemData)
-          .eq('id', id);
+        const { error } = await supabase.from('poems').update(poemData).eq('id', id);
         if (error) throw error;
         toast({
           title: status === 'published' ? "Publicado!" : "Rascunho salvo",
           description: "As alterações foram guardadas.",
         });
       } else {
-        const { error } = await supabase
-          .from('poems')
-          .insert([poemData]);
+        const { error } = await supabase.from('poems').insert([poemData]);
         if (error) throw error;
-        toast({
-          title: "Novo poema!",
-          description: "Adicionado ao acervo.",
-        });
+        toast({ title: "Novo poema!", description: "Adicionado ao acervo." });
         navigate('/admin');
       }
     } catch (error) {
@@ -142,24 +164,11 @@ const Editor: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const handleSelection = () => {
-      const selection = window.getSelection();
-      if (selection && selection.toString().length > 0) {
-        setToolbarVisible(true);
-      } else {
-        setToolbarVisible(false);
-      }
-    };
-    document.addEventListener('selectionchange', handleSelection);
-    return () => document.removeEventListener('selectionchange', handleSelection);
-  }, []);
-
   return (
     <div className="flex h-screen overflow-hidden bg-white selection:bg-primary/20 relative">
       <div className="fixed inset-0 pointer-events-none -z-10 bg-gradient-to-b from-[#bbfda6]/20 via-transparent to-transparent"></div>
 
-      {/* Meta Sidebar (Collapsible) */}
+      {/* Meta Sidebar */}
       <aside className={`fixed inset-y-0 right-0 w-80 bg-[#f9fcf8] border-l border-primary/10 transition-transform duration-500 ease-in-out z-50 shadow-2xl ${showMeta ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="h-full flex flex-col p-8 overflow-y-auto custom-scrollbar">
           <div className="flex items-center justify-between mb-8">
@@ -170,6 +179,7 @@ const Editor: React.FC = () => {
           </div>
 
           <div className="space-y-8">
+            {/* Capa */}
             <div className="space-y-3">
               <label className="flex items-center gap-2 font-ui text-[10px] font-bold uppercase tracking-widest text-muted">
                 <ImageIcon className="w-3 h-3" /> Capa
@@ -190,28 +200,37 @@ const Editor: React.FC = () => {
                 ) : (
                   <>
                     <Upload className="w-5 h-5 text-primary/40 group-hover:text-primary/60" />
-                    <span className="text-[10px] font-bold text-muted/60 uppercase tracking-widest">Enviar</span>
+                    <span className="text-[10px] font-bold text-muted/60 uppercase tracking-widest">Enviar foto</span>
                   </>
                 )}
               </div>
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                try {
-                  setUploading(true);
-                  const fileName = `poems/${Date.now()}-${file.name}`;
-                  const { error } = await supabase.storage.from('poems-images').upload(fileName, file);
-                  if (error) throw error;
-                  const { data: { publicUrl } } = supabase.storage.from('poems-images').getPublicUrl(fileName);
-                  setImageUrl(publicUrl);
-                  toast({ title: "Upload concluído", description: "Imagem salva no Supabase Storage." });
-                } catch (err) {
-                  console.error(err);
-                  toast({ variant: "destructive", title: "Erro no upload", description: "Tente novamente mais tarde." });
-                } finally { setUploading(false); }
-              }} />
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    setUploading(true);
+                    const fileName = `poems/${Date.now()}-${file.name}`;
+                    const { error } = await supabase.storage.from('poems-images').upload(fileName, file);
+                    if (error) throw error;
+                    const { data: { publicUrl } } = supabase.storage.from('poems-images').getPublicUrl(fileName);
+                    setImageUrl(publicUrl);
+                    toast({ title: "Upload concluído", description: "Imagem salva." });
+                  } catch (err) {
+                    console.error(err);
+                    toast({ variant: "destructive", title: "Erro no upload", description: "Tente novamente." });
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+              />
             </div>
 
+            {/* Descrição */}
             <div className="space-y-3">
               <label className="flex items-center gap-2 font-ui text-[10px] font-bold uppercase tracking-widest text-muted">
                 <AlignLeft className="w-3 h-3" /> Descrição
@@ -224,18 +243,20 @@ const Editor: React.FC = () => {
               />
             </div>
 
+            {/* Categoria */}
             <div className="space-y-3">
               <label className="flex items-center gap-2 font-ui text-[10px] font-bold uppercase tracking-widest text-muted">
                 <Tag className="w-3 h-3" /> Categoria
               </label>
               <Input
-                placeholder="Ex: Amor..."
+                placeholder="Ex: Amor, Natureza..."
                 className="bg-white rounded-2xl border-tertiary/10 py-5 text-sm font-ui focus:ring-primary/20"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               />
             </div>
 
+            {/* Destaque */}
             <div
               onClick={() => setFeatured(!featured)}
               className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${featured ? 'bg-accent/10 border-accent/30 text-primary-dark' : 'bg-white border-tertiary/10 text-muted'}`}
@@ -245,10 +266,11 @@ const Editor: React.FC = () => {
                 <span className="font-ui text-xs font-bold uppercase tracking-widest">Destaque</span>
               </div>
               <div className={`w-8 h-4 rounded-full relative transition-colors ${featured ? 'bg-accent' : 'bg-gray-200'}`}>
-                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${featured ? 'left-4.5' : 'left-0.5'}`}></div>
+                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all duration-300 ${featured ? 'left-[18px]' : 'left-0.5'}`}></div>
               </div>
             </div>
 
+            {/* Excluir */}
             {id && (
               <Button
                 variant="outline"
@@ -260,14 +282,16 @@ const Editor: React.FC = () => {
                   }
                 }}
               >
-                <Trash2 className="w-3 h-3 mr-2" /> Excluir
+                <Trash2 className="w-3 h-3 mr-2" /> Excluir Poema
               </Button>
             )}
           </div>
         </div>
       </aside>
 
+      {/* Main Content */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Header */}
         <header className="flex items-center justify-between bg-white/80 backdrop-blur-md px-4 lg:px-10 py-4 lg:py-6 border-b border-primary/5 z-20">
           <div className="flex items-center gap-2 lg:gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate('/admin')} className="rounded-full hover:bg-primary/5 h-10 w-10">
@@ -275,7 +299,7 @@ const Editor: React.FC = () => {
             </Button>
             <div className="hidden sm:block h-6 w-px bg-primary/10"></div>
             <p className="hidden sm:block font-ui text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/60">
-              {saving ? 'Crescendo...' : id ? 'Refinando' : 'Novo Gotejo'}
+              {saving ? 'Salvando...' : id ? 'Refinando' : 'Novo Gotejo'}
             </p>
           </div>
 
@@ -308,33 +332,64 @@ const Editor: React.FC = () => {
             >
               <Save className="w-4 h-4 lg:mr-2" />
               <span className="hidden lg:inline">{id ? 'Salvar' : 'Publicar'}</span>
-              <span className="lg:hidden">{id ? 'Salvar' : 'Salvar'}</span>
             </Button>
           </div>
         </header>
 
-        <main className="flex-grow overflow-y-auto px-6 lg:px-10 py-12 lg:py-16 custom-scrollbar">
-          <div className="max-w-[800px] mx-auto space-y-6 lg:space-y-10">
+        {/* Editor Area */}
+        <main className="flex-grow overflow-y-auto custom-scrollbar">
+          <div className="max-w-[800px] mx-auto px-6 lg:px-0 py-12 lg:py-16 space-y-6 lg:space-y-10">
+            {/* Título */}
             <input
-              className="w-full bg-transparent text-4xl lg:text-8xl font-display font-medium text-text-main placeholder:text-gray-100 border-none outline-none focus:ring-0 p-0 leading-tight italic"
-              placeholder="Título..."
+              className="w-full bg-transparent text-4xl lg:text-7xl font-display font-medium text-text-main placeholder:text-gray-200 border-none outline-none focus:ring-0 p-0 leading-tight italic"
+              placeholder="Título da obra..."
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
             <div className="h-px w-20 bg-primary/20"></div>
-            <div
-              ref={editorRef}
-              className="editor-content w-full min-h-[60vh] text-xl lg:text-3xl leading-relaxed text-text-main/80 outline-none font-body prose prose-lg max-w-none empty:before:content-[attr(placeholder)] empty:before:text-gray-100 pb-20"
-              contentEditable
-              suppressContentEditableWarning
-              placeholder="As palavras gotejam aqui..."
-            ></div>
+
+            {/* Editor BlockNote em Português — sem opções de mídia no menu / */}
+            <div className="w-full min-h-[60vh] pb-16">
+              <BlockNoteView
+                editor={editor}
+                theme="light"
+                slashMenu={false}
+              >
+                <SuggestionMenuController
+                  triggerCharacter="/"
+                  getItems={async (query) => {
+                    // Filtrar grupos de mídia, avançado e outros
+                    const filtered = getDefaultReactSlashMenuItems(editor).filter(
+                      (item) =>
+                        item.group !== "Mídia" &&
+                        item.group !== "Outros" &&
+                        item.group !== "Avançado" &&
+                        item.group !== "Media" &&
+                        item.group !== "Other" &&
+                        item.group !== "Advanced"
+                    );
+                    // Filtrar por query (busca pelo título ou aliases)
+                    if (!query) return filtered;
+                    const q = query.toLowerCase();
+                    return filtered.filter(
+                      (item) =>
+                        item.title.toLowerCase().includes(q) ||
+                        item.aliases?.some((a) => a.toLowerCase().includes(q))
+                    );
+                  }}
+                />
+              </BlockNoteView>
+            </div>
           </div>
         </main>
       </div>
 
-      <div className={`fixed inset-0 bg-black/5 backdrop-blur-[2px] z-40 transition-opacity duration-500 ${showMeta ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setShowMeta(false)}></div>
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 bg-black/5 backdrop-blur-[2px] z-40 transition-opacity duration-500 ${showMeta ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setShowMeta(false)}
+      ></div>
     </div>
   );
 };
