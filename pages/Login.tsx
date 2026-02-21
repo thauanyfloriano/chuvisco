@@ -1,26 +1,38 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { generateToken } from '../src/lib/auth';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
   const [shaking, setShaking] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate validation error then success for demo
-    setShaking(true);
-    setError(true);
-    setTimeout(() => setShaking(false), 820);
 
-    // In a real app, this would be the success path
-    setTimeout(() => {
-      navigate('/admin');
-    }, 1000);
+    const validEmail = import.meta.env.VITE_EMAIL;
+    const validPassword = import.meta.env.VITE_SENHA;
+
+    if (email === validEmail && password === validPassword) {
+      setError(false);
+      // Gera um token criptográfico real assinado com sua chave secreta
+      generateToken({ email }).then(token => {
+        localStorage.setItem('chuvisco_auth_token', token);
+        setTimeout(() => {
+          navigate('/admin');
+        }, 500);
+      });
+    } else {
+      setShaking(true);
+      setError(true);
+      setTimeout(() => setShaking(false), 820);
+    }
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center font-display text-[#101b0d] overflow-hidden bg-[#f0fdf4]">
+    <div className="flex min-h-[100dvh] w-full items-center justify-center font-display text-[#101b0d] overflow-hidden bg-[#f0fdf4]">
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#132210 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
 
       <div className="w-full max-w-[420px] px-6 relative z-10">
@@ -34,8 +46,6 @@ const Login: React.FC = () => {
                 <span className="text-3xl font-bold italic tracking-tight text-primary font-display">Chuvisco</span>
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-text-main">O Portão</h1>
-            <p className="mt-2 text-muted font-body">Entre para cuidar do seu jardim digital.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -48,7 +58,9 @@ const Login: React.FC = () => {
                     className="peer block w-full border-0 border-b border-slate-100 bg-transparent py-3 pl-8 text-base text-slate-900 focus:border-primary focus:ring-0 placeholder:text-slate-300 font-body transition-all"
                     id="email"
                     type="email"
-                    placeholder="naira@chuvisco.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seu@email.com"
                     required
                   />
                 </div>
@@ -62,6 +74,8 @@ const Login: React.FC = () => {
                     className="peer block w-full border-0 border-b border-slate-100 bg-transparent py-3 pl-8 text-base text-slate-900 focus:border-primary focus:ring-0 placeholder:text-slate-300 font-body transition-all"
                     id="password"
                     type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
                   />
@@ -72,7 +86,7 @@ const Login: React.FC = () => {
             {error && (
               <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-xl border border-red-100 animate-fade-in">
                 <span className="material-symbols-outlined text-lg">error</span>
-                <span className="text-xs font-medium font-body italic">Chave incorreta. Tente "123". (Demo...)</span>
+                <span className="text-xs font-medium font-body italic">Credenciais incorretas. Tente novamente.</span>
               </div>
             )}
 
@@ -81,7 +95,7 @@ const Login: React.FC = () => {
                 type="submit"
                 className={`group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-primary px-8 py-4 text-white transition-all hover:bg-primary-dark hover:shadow-lg hover:shadow-primary/20 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 active:scale-[0.98] ${shaking ? 'animate-shake' : ''}`}
               >
-                <span className="font-ui text-sm font-bold tracking-wider uppercase">Abrir o Portão</span>
+                <span className="font-ui text-sm font-bold tracking-wider uppercase">Entrar</span>
                 <span className="material-symbols-outlined text-lg transition-transform group-hover:translate-x-1">arrow_forward</span>
               </button>
             </div>

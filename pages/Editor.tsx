@@ -156,7 +156,9 @@ const Editor: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white selection:bg-primary/20">
+    <div className="flex h-screen overflow-hidden bg-white selection:bg-primary/20 relative">
+      <div className="fixed inset-0 pointer-events-none -z-10 bg-gradient-to-b from-[#bbfda6]/20 via-transparent to-transparent"></div>
+
       {/* Meta Sidebar (Collapsible) */}
       <aside className={`fixed inset-y-0 right-0 w-80 bg-[#f9fcf8] border-l border-primary/10 transition-transform duration-500 ease-in-out z-50 shadow-2xl ${showMeta ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="h-full flex flex-col p-8 overflow-y-auto custom-scrollbar">
@@ -266,48 +268,55 @@ const Editor: React.FC = () => {
       </aside>
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="flex items-center justify-between bg-white/80 backdrop-blur-md px-10 py-6 border-b border-primary/5">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')} className="rounded-full hover:bg-primary/5">
+        <header className="flex items-center justify-between bg-white/80 backdrop-blur-md px-4 lg:px-10 py-4 lg:py-6 border-b border-primary/5 z-20">
+          <div className="flex items-center gap-2 lg:gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')} className="rounded-full hover:bg-primary/5 h-10 w-10">
               <ArrowLeft className="w-5 h-5 text-primary" />
             </Button>
-            <div className="h-6 w-px bg-primary/10"></div>
-            <p className="font-ui text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/60">
+            <div className="hidden sm:block h-6 w-px bg-primary/10"></div>
+            <p className="hidden sm:block font-ui text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/60">
               {saving ? 'Crescendo...' : id ? 'Refinando' : 'Novo Gotejo'}
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
+              size="icon"
               onClick={() => setShowMeta(true)}
-              className="rounded-2xl font-ui text-[10px] font-bold uppercase tracking-wider text-muted hover:text-primary"
+              className="rounded-xl lg:rounded-2xl lg:px-4 lg:py-2 h-10 w-10 lg:w-auto font-ui text-[10px] font-bold uppercase tracking-wider text-muted hover:text-primary"
             >
-              <SettingsIcon className="w-4 h-4 mr-2" /> Detalhes
+              <SettingsIcon className="w-4 h-4 lg:mr-2" />
+              <span className="hidden lg:inline">Detalhes</span>
             </Button>
-            <div className="h-6 w-px bg-primary/10 mx-1"></div>
+
             <Button
               variant="outline"
+              size="icon"
               disabled={saving}
               onClick={() => handleSave('draft')}
-              className="rounded-2xl font-ui text-[10px] font-bold uppercase tracking-widest border-primary/10 text-muted"
+              className="rounded-xl lg:rounded-2xl lg:px-4 lg:py-2 h-10 w-10 lg:w-auto font-ui text-[10px] font-bold uppercase tracking-widest border-primary/10 text-muted"
             >
-              <Clock className="w-4 h-4 mr-2" /> Rascunho
+              <Clock className="w-4 h-4 lg:mr-2" />
+              <span className="hidden lg:inline">Rascunho</span>
             </Button>
+
             <Button
               disabled={saving}
               onClick={() => handleSave('published')}
-              className="rounded-2xl px-8 shadow-soft font-ui text-[10px] font-bold uppercase tracking-widest"
+              className="rounded-xl lg:rounded-2xl px-4 lg:px-8 h-10 lg:h-auto shadow-soft font-ui text-[10px] font-bold uppercase tracking-widest"
             >
-              <Save className="w-4 h-4 mr-2" /> {id ? 'Salvar' : 'Publicar'}
+              <Save className="w-4 h-4 lg:mr-2" />
+              <span className="hidden lg:inline">{id ? 'Salvar' : 'Publicar'}</span>
+              <span className="lg:hidden">{id ? 'Salvar' : 'Salvar'}</span>
             </Button>
           </div>
         </header>
 
-        <main className="flex-grow overflow-y-auto px-10 py-16 custom-scrollbar">
-          <div className="max-w-[800px] mx-auto space-y-10">
+        <main className="flex-grow overflow-y-auto px-6 lg:px-10 py-12 lg:py-16 custom-scrollbar">
+          <div className="max-w-[800px] mx-auto space-y-6 lg:space-y-10">
             <input
-              className="w-full bg-transparent text-6xl md:text-8xl font-display font-medium text-text-main placeholder:text-gray-100 border-none outline-none focus:ring-0 p-0 leading-tight italic"
+              className="w-full bg-transparent text-4xl lg:text-8xl font-display font-medium text-text-main placeholder:text-gray-100 border-none outline-none focus:ring-0 p-0 leading-tight italic"
               placeholder="Título..."
               type="text"
               value={title}
@@ -316,7 +325,7 @@ const Editor: React.FC = () => {
             <div className="h-px w-20 bg-primary/20"></div>
             <div
               ref={editorRef}
-              className="editor-content w-full min-h-[60vh] text-2xl md:text-3xl leading-relaxed text-text-main/80 outline-none font-body prose prose-lg max-w-none empty:before:content-[attr(placeholder)] empty:before:text-gray-100"
+              className="editor-content w-full min-h-[60vh] text-xl lg:text-3xl leading-relaxed text-text-main/80 outline-none font-body prose prose-lg max-w-none empty:before:content-[attr(placeholder)] empty:before:text-gray-100 pb-20"
               contentEditable
               suppressContentEditableWarning
               placeholder="As palavras gotejam aqui..."

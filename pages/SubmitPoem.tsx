@@ -111,7 +111,7 @@ const SubmitPoem: React.FC = () => {
         <div className="min-h-screen bg-[#fcfdfc] font-body text-text-main flex flex-col">
             <Navbar />
 
-            <main className="flex-1 flex flex-col items-center justify-center px-4 py-20 relative overflow-hidden">
+            <main className="flex-1 flex flex-col items-center justify-center px-4 py-20 relative overflow-hidden mt-10">
                 <div className="w-full max-w-[800px] space-y-12">
                     <header className="text-center space-y-4">
                         <div className="flex items-center justify-center gap-3 mb-2">
@@ -121,7 +121,7 @@ const SubmitPoem: React.FC = () => {
                         <h1 className="font-display text-5xl md:text-7xl font-bold text-primary italic leading-tight">Envie sua Poesia</h1>
                     </header>
 
-                    <div className="bg-white rounded-[3rem] p-10 md:p-16 shadow-soft border border-primary/5 space-y-10">
+                    <div className="bg-white rounded-[3rem] p-8 md:p-16 shadow-soft border border-primary/5 space-y-10">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-3">
                                 <label className="flex items-center gap-2 font-ui text-[10px] font-bold uppercase tracking-widest text-muted">
@@ -168,11 +168,11 @@ const SubmitPoem: React.FC = () => {
                             <Button
                                 onClick={handleSubmit}
                                 disabled={status === 'submitting'}
-                                className="w-full md:w-auto rounded-2xl px-10 py-8 h-auto font-ui font-bold uppercase tracking-[0.2em]"
+                                className="w-full md:w-auto rounded-2xl px-10 py-5 h-auto font-ui font-bold uppercase tracking-[0.2em]"
                             >
                                 {status === 'submitting' ? 'Semeando...' : (
                                     <>
-                                        Enviar Poesia <ArrowRight className="ml-3 w-5 h-5" />
+                                        Enviar Poesia <ArrowRight className="w-5 h-5" />
                                     </>
                                 )}
                             </Button>

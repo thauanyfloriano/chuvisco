@@ -42,25 +42,25 @@ const ReadingView: React.FC = () => {
 
   return (
     <div className="bg-[#f9fcf8] text-text-main antialiased min-h-screen flex flex-col items-center relative selection:bg-[#bbfda6]">
-      {/* Fixed Back Navigation */}
-      <div className="fixed top-8 left-8 z-50">
+      {/* Back Navigation */}
+      <div className="absolute top-6 left-4 lg:top-8 lg:left-8 z-50">
         <button
           onClick={() => navigate('/')}
-          className="group flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 hover:bg-[#bbfda6]/50"
+          className="group flex items-center gap-2 px-3 lg:px-4 py-2 rounded-xl transition-all duration-300 hover:bg-[#bbfda6]/50"
         >
-          <span className="material-symbols-outlined text-muted group-hover:text-primary transition-colors text-[20px]">arrow_back</span>
-          <span className="font-ui text-muted font-medium text-sm tracking-wide uppercase group-hover:text-primary transition-colors">Voltar ao jardim</span>
+          <span className="material-symbols-outlined text-muted group-hover:text-primary transition-colors text-[18px] lg:text-[20px]">arrow_back</span>
+          <span className="font-ui text-muted font-medium text-[10px] lg:text-sm tracking-widest uppercase group-hover:text-primary transition-colors">Voltar ao jardim</span>
         </button>
       </div>
 
-      <main className="w-full max-w-[720px] px-6 pb-32 pt-[160px] flex flex-col items-center animate-fade-in">
+      <main className="w-full max-w-[720px] px-6 pb-32 pt-24 lg:pt-[160px] flex flex-col items-center animate-fade-in">
         <header className="flex flex-col items-center w-full mb-12 text-center">
           <div className="mb-6">
             <span className="font-ui text-muted text-xs font-bold tracking-[0.15em] uppercase">
               {new Date(poem.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
             </span>
           </div>
-          <h1 className="font-display text-primary text-5xl md:text-[56px] font-bold leading-tight mb-8">
+          <h1 className="font-display text-primary text-5xl md:text-[56px] font-bold leading-tight mb-8 break-all">
             {poem.title}
           </h1>
           <div className="text-[#7bbc6a] opacity-80">
@@ -68,7 +68,7 @@ const ReadingView: React.FC = () => {
           </div>
         </header>
 
-        <article className="w-full font-body text-text-main text-[21px] leading-[1.8] tracking-wide">
+        <article className="w-full font-body text-text-main text-[21px] leading-[1.8] tracking-wide break-all">
           <div dangerouslySetInnerHTML={{ __html: poem.content }} />
         </article>
 
